@@ -1,8 +1,10 @@
 from src.MixtureModels import *
 import pickle
 import os
+
+
 class RunExp:
-    def __init__(self,list_pi,list_theta_i_m,list_N,list_E,list_Distr,list_alpha,list_threshold):
+    def __init__(self,list_pi=[""],list_theta_i_m=[""],list_N=[""],list_E=[""],list_Distr=[""],list_threshold=[""],list_alpha=[""]):
         
         dict_exp = []
         

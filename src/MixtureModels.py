@@ -12,18 +12,107 @@ from sklearn.preprocessing import OneHotEncoder
 from ipywidgets import IntProgress
 from IPython.display import display
 
+"""
+####################################################################################
+##########################                                ##########################
+##########################         Mixture Models         ##########################
+##########################                                ##########################
+####################################################################################
+
+Classes to:
+        - Generate sample of Multinomial/Dirichlet from an ensemble of categorical law;
+        - Fit mixture model over multinomial or dirichlet assumption.
+
+"""
+
+
 class GenMixtSampleFromCatEns:
+    """
+    Class to generate sample of Multinomial/Dirichlet from an ensemble of categorical law
+    ...
+
+    Attributes
+    ----------
+    E : int
+        Number of categorical ensemble members
+    pi_Z : [[float]*K]*M
+         M probabilities vector of size K of the multinomial mixture model, M being the number of mixture, and K the number of classes.
+
+    Methods
+    -------
+    generate(N,distribution="Categorial",**kwargs): Function to generate sample for categorical, multinomial or dirichlet distributions.
+        N : int
+            Sample size
+        distribution : str
+            Name of the distribution to generate
+        **kwargs: [object]
+            Array of function attributes needed for each distribution.
+            
+    Categorial(N,pi=None,Z=None,seed=12)
+        N : int
+            Sample size
+        pi : [float]*M
+            Mixture probabilities vector of size M
+        Z : [int]*N
+            Mixture labels array
+        seed : int
+            Random generator seed
+            
+    Multinomial(self,N,Z=None,pi=None,seed=12)
+        N : int
+            Sample size
+        pi : [float]*M
+            Mixture probabilities vector of size M
+        Z : [int]*N
+            Mixture labels array
+        seed : int
+            Random generator seed
+            
+    Dirichlet(N,alpha=None,Z=None,pi=None,seed=12)
+        N : int
+            Sample size
+        alpha: [[float]*K]*M
+            Dirichlet parameter vector of size K for each of the M mixture.
+        pi : [float]*M
+            Mixture probabilities vector of size M
+        Z : [int]*N
+            Mixture labels array
+        seed : int
+            Random generator seed
+    """
+    
+    
     def __init__(self,E,pi_Z):
+        """
+        @param E:int, Number of categorical ensemble members
+        @param pi_Z: [[float]*K]*M,  M probabilities vector of size K of the multinomial mixture model, M being the number of mixture, and K the number of classes.
+        """
+        
         self.E = E
         self.pi_Z = pi_Z
            
     def generate(self,N,distribution="Categorial",**kwargs):
+        """
+        @param N:int, Sample size
+        @param distribution: str, Name of the distribution to generate
+        @param **kwargs:[object], Array of function attributes needed for each distribution.
+        
+        @return: sample array [[float]*E]*N if Categorical distribution is called , else [[float]*K]*N
+        """
         self.distribution = distribution
         generator = getattr(self, self.distribution)
         return generator(N=N,**kwargs)
         
     
     def Categorial(self,N,pi=None,Z=None,seed=12):
+        """
+        @param N : int, Sample size
+        @param pi : [float]*M,  Mixture probabilities vector of size M
+        @param Z : [int]*N, Mixture labels array
+        @param seed : int, Random generator seed
+        
+        @return: sample array [[float]*E]*N 
+        """
         pi_Z = self.pi_Z
         E = self.E
         M = pi_Z.shape[0]
@@ -48,6 +137,14 @@ class GenMixtSampleFromCatEns:
         return X,Z
     
     def Multinomial(self,N,Z=None,pi=None,seed=12):
+        """
+        @param N : int, Sample size
+        @param pi : [float]*M,  Mixture probabilities vector of size M
+        @param Z : [int]*N, Mixture labels array
+        @param seed : int, Random generator seed
+        
+        @return: sample array [[float]*K]*N
+        """
         pi_Z = self.pi_Z
         E = self.E
         M = pi_Z.shape[0]
@@ -69,7 +166,16 @@ class GenMixtSampleFromCatEns:
         
         return X,Z
     
-    def Dirichlet(self,T,alpha=None,Z=None,pi=None,seed=12):
+    def Dirichlet(self,N,alpha=None,Z=None,pi=None,seed=12):
+        """
+        @param N : int, Sample size
+        @param alpha: [[float]*K]*M, Dirichlet parameter vector of size K for each of the M mixture.
+        @param pi : [float]*M,  Mixture probabilities vector of size M
+        @param Z : [int]*N, Mixture labels array
+        @param seed : int, Random generator seed
+        
+        @return: sample array [[float]*K]*N
+        """
         pi_Z = self.pi_Z
         E = self.E
         M = pi_Z.shape[0]
@@ -99,13 +205,38 @@ class GenMixtSampleFromCatEns:
         
     
 class Model:
-    def __init__(self,censored=False,threshold=0,**kwargs):
+    """
+    Class to generate sample of Multinomial/Dirichlet from an ensemble of categorical law
+    ...
+
+    Attributes
+    ----------
+    verbose:
+    M:
+    E:
+    theta_i1:
+    model_init:
+    filtered:
+    threshold:
+
+    Methods
+    -------
+    KMeans(self,X,M,seed=12,**kwargs):
+    smallEM(self,X,M, maxEM=50,init="k-means++"):
+    searchM(self,X,seed=12,**kwargs):
+    initMMM(self,X,**kwargs):
+    fit(self,X,tol=1e-6,maxiter=10,**kwargs):
+    predict(self,X):
+    predict_proba(self,X):
+    """
+        
+    def __init__(self,filtered=False,threshold=0,**kwargs):
         self.verbose = kwargs.get("verbose", 0)
         self.M = kwargs.get("M", None)
         self.E = kwargs.get("E", None)
         self.theta_i1=None
         self.model_init = kwargs.get("model_init", None)
-        self.censored = censored
+        self.filtered = filtered
         self.threshold = threshold
         
     def KMeans(self,X,M,seed=12,**kwargs):
@@ -243,7 +374,7 @@ class Model:
 
         
     def fit(self,X,tol=1e-6,maxiter=10,**kwargs):
-        if self.censored:
+        if self.filtered:
             if sum(X[0,:])==self.E:
                 u2 = ((X/self.E)*(1-X/self.E)).sum(axis=1)
             else:
@@ -309,7 +440,7 @@ class Model:
         
     
     def predict(self,X):
-        if self.censored:
+        if self.filtered:
             if sum(X[0,:])==self.E:
                 u2 = ((X/self.E)*(1-X/self.E)).sum(axis=1)
             else:
@@ -328,7 +459,7 @@ class Model:
             return temp["clusters"]
 
     def predict_proba(self,X):
-        if self.censored:
+        if self.filtered:
             if sum(X[0,:])==self.E:
                 u2 = ((X/self.E)*(1-X/self.E)).sum(axis=1)
             else:
