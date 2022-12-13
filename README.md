@@ -3,7 +3,7 @@ Method to analyze uncertainty into ensemble of scorers from sleep studies.
 
 ## Scientific purpose
 <br/>
-In this github repository, codes are proposed to deploy a method composed of a filtering part and a mixture model to fit ensemble data sampled from a vector of E categorial variable $Y_{n}=(Y_{n1},\cdots,Y_{nE})$, $\forall+n+\in\\{1,...,N\\}$ where E denotes the ensemble size and N the sample size.
+In this github repository, codes are proposed to deploy a method composed of a filtering part and a mixture model to fit ensemble data sampled from a vector of E categorial variable $Y_{n}=(Y_{n1},\cdots,Y_{nE})$, $\forall n \in\\{1,...,N\\}$ where E denotes the ensemble size and N the sample size.
 
 The proposed mixture model are based on a multinomial or dirichlet (work in progress for dirichlet).
 
