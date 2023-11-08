@@ -25,24 +25,24 @@ Experiments with different data sets and method parameterisations are proposed t
 <div class="image-wrapper" >
     <img src="/figure/SimuSelec0.png" alt=""/>
   </a>
-      <p class="image-caption">Figure 1: .</p>
+      <p class="image-caption">Figure 1: Selection of the number of cluster $M$ through the minimization of the BIC.</p>
 </div>
 
 <div class="image-wrapper" >
     <img src="/figure/SimuSelec1.png" alt=""/>
   </a>
-      <p class="image-caption">Figure 2: .</p>
+      <p class="image-caption">Figure 2: Selection of the threshold $\delta$ through the maximization of the $\Delta U_2$ criterion regarding the selected $M^*$..</p>
 </div>
 
 
 <div class="image-wrapper" >
-    <img src="/figure/SimuSelec2.png" alt=""/>
+    <img src="/figure/SimuScore0.png" alt=""/>
   </a>
-      <p class="image-caption">Figure 3: .</p>
+      <p class="image-caption">Figure 3: Evaluation of the two subsets of estimated parameters ($\hat{\theta}_{\delta^-}$, $\hat{\theta}_{\delta^+}$) using the RMSE with the true parameters ($\theta_{\delta^-}$, $\theta_{\delta^+}$)..</p>
 </div>
 
 <div class="image-wrapper" >
-    <img src="/figure/SimuSelec3.png" alt=""/>
+    <img src="/figure/SimuScore1.png" alt=""/>
   </a>
-      <p class="image-caption">Figure 4: .</p>
+      <p class="image-caption">Figure 4: Assessment of the cluster assignment using the ACC computed between the estimated subsets parameters ($\hat{\theta}_{\delta^-}$, $\hat{\theta}_{\delta^+}$) and the true parameters ($\theta_{\delta^-}$, $\theta_{\delta^+}$)..</p>
 </div>
