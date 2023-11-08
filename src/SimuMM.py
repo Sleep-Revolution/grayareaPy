@@ -79,7 +79,7 @@ class RunExp:
                 results["RMSE"] = RMSE
                 results["CM"] = CM
                 
-                if (self.dict_exp[exp]["Distribution"] == "Dirichlet") & (not (self.dict_exp[exp]["Alpha"] is None)):
+                if (self.dict_exp[exp]["Distribution"] == "Dirichlet") & (not (self.dict_exp[exp]["Alpha"]=="")):
                     # Dirichlet sample generated from alpha parameter
                     X_,Z_D = GenSample.generate(N=self.dict_exp[exp]["N"],
                                                     alpha=self.dict_exp[exp]["Alpha"],
