@@ -13,7 +13,6 @@ The Python scripts and notebook files of this project are organised as follows:
 * **/src/MixtureModels.py**: All method components (filtering, mixture model, EM algorithm, initialisation method);
 * **/src/SimuMM.py**: Class to simulate, run and validate data and method over different parameter sets and validation criteria;
 * **/SimuMM.ipynb**: Experiment parameter sets and call of simulation method;
-* **/ResultPlot.ipynb**: All produced plots from experiment results.
 
 ## Simulation Study
 
@@ -22,24 +21,30 @@ Experimental examples are provided in the operational domain of human sleep stag
 Experiments with different data sets and method parameterisations are proposed to be studied here.
 
 <div class="image-wrapper" >
-    <img src="/figure/parameters_table.png" alt=""/>
+    <img src="/figure/table1.png" alt=""/>
+</div>
+
+<div class="image-wrapper" >
+    <img src="/figure/SimuSelec0.png" alt=""/>
+  </a>
+      <p class="image-caption">Figure 1: .</p>
+</div>
+
+<div class="image-wrapper" >
+    <img src="/figure/SimuSelec1.png" alt=""/>
+  </a>
+      <p class="image-caption">Figure 2: .</p>
 </div>
 
 
 <div class="image-wrapper" >
-    <img src="/figure/IntroSimu.png" alt=""/>
+    <img src="/figure/SimuSelec2.png" alt=""/>
   </a>
-      <p class="image-caption">Figure 1: Comparison between real and simulated data with equal proportion mixture components. Top row: Hypnograms of real ensemble on the left and simulated ensemble with their associated clusters on the right and over 25 epochs. Bottom row: Density of the coefficient of unalikeability estimated on real dataset on the left and on simulated data on the right. Red doted lines symbolized the threshold $\delta=2$.</p>
+      <p class="image-caption">Figure 3: .</p>
 </div>
 
 <div class="image-wrapper" >
-    <img src="/figure/SimuRes.png" alt=""/>
+    <img src="/figure/SimuSelec3.png" alt=""/>
   </a>
-      <p class="image-caption">Figure 2: Estimated criteria over 30 repeated experiments of simulated dataset for different datasize $N$ along x-axis and different set of $pi$ for each columns. First row: Number of clusters selected by BIC estimation. Second row: Root mean square error (RMSE) estimated. Final row: estimation of the accuracy.</p>
-</div>
-
-<div class="image-wrapper" >
-    <img src="/figure/CMSIMU.png" alt=""/>
-  </a>
-      <p class="image-caption">Figure 3: Confusion matrix by experiment, averaged over 30 randomly generated datasets and normalized. Each panel represent the averaged and normalized confusion matrix for one specific experiment.</p>
+      <p class="image-caption">Figure 4: .</p>
 </div>
