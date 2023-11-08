@@ -3,7 +3,7 @@ Method for clustering categorical ensemble data set and resuming clusters in two
 
 ## Scientific purpose
 
-This github repository proposes codes to apply a clustering method based on two steps and a mixture model to fit an ensemble of categorical variables $(y_{n1},\cdots,y_{nE})$, $\forall n \in\\{1,...,N\\}$, where E is the ensemble size and N is the sample size. The aim of this method is to first automatically select and fit an appropriate number of clusters using the BIC criteria and then a threshold is selected using a distance measurement of cluster dispersion to generate two supra-clusters with high and low perturbed clusters (more details in ![G. Jouan et al. 2023](https://www.sciencedirect.com/science/article/pii/S0377221723007567)).
+This github repository proposes codes to apply a clustering method based on two steps and a mixture model to fit an ensemble of categorical variables $(y_{n1},\cdots,y_{nE})$, $\forall n \in\\{1,...,N\\}$, where E is the ensemble size and N is the sample size. The aim of this method is to first automatically select and fit an appropriate number of clusters using the BIC criteria and then a threshold is selected using a distance measurement of cluster dispersion to generate two supra-clusters with high and low perturbed clusters (more details in [G. Jouan et al. 2023](https://www.sciencedirect.com/science/article/pii/S0377221723007567)).
 
 The proposed mixture model is based on a multinomial or Dirichlet distribution (work in progress for Dirichlet). 
 
