@@ -1,4 +1,5 @@
-
+import os
+os.environ["OMP_NUM_THREADS"]="1"
 import numpy as np
 from statsmodels.stats.inter_rater import fleiss_kappa, aggregate_raters
 import matplotlib.pyplot as plt
@@ -217,7 +218,6 @@ class Model:
     E:
     theta_i1:
     model_init:
-    filtered:
     threshold:
 
     Methods
@@ -231,21 +231,20 @@ class Model:
     predict_proba(self,X):
     """
         
-    def __init__(self,filtered=False,threshold=0,**kwargs):
+    def __init__(self,**kwargs):
         self.verbose = kwargs.get("verbose", 0)
         self.M = kwargs.get("M", None)
         self.E = kwargs.get("E", None)
         self.theta_i1=None
         self.model_init = kwargs.get("model_init", None)
-        self.filtered = filtered
-        self.threshold = threshold
+        self.threshold = kwargs.get("threshold", None)
         
     def KMeans(self,X,M,seed=12,**kwargs):
         init = kwargs.get("init", "k-means++")
         max_iter = kwargs.get("max_iter", 100)
         
         np.random.seed(seed)
-        model_init = skc.MiniBatchKMeans(init=init,n_clusters=M,max_iter=max_iter).fit(X)
+        model_init = skc.MiniBatchKMeans(init=init,n_clusters=M,max_iter=max_iter,n_init='auto').fit(X)
         
         p_ij = OneHotEncoder(handle_unknown='ignore').fit_transform(model_init.labels_[np.newaxis].T).toarray()
         model = self.params_init(X,p_ij)
@@ -280,6 +279,31 @@ class Model:
         model["Seed"] = list_seed
         return {"Model":model, "BIC":list_BIC[bestM]}
     
+    def searchTreshold(self,X,end=0.01):
+        self.K = X.shape[1]
+
+        if sum(X[0,:])==self.E:
+            u2 = ((X/self.E)*(1-X/self.E)).sum(axis=1)
+        else:
+            u2 = ((X)*(1-X)).sum(axis=1)
+
+
+        listthreshold = np.arange(0,np.quantile(u2,1).round(1)+end,end).round(2)
+
+
+        clusters = self.predict(X,supracluster=False)
+
+        dU2array = []
+        for threshold in listthreshold:
+            dU2array.append(self.dU2(u2,clusters,threshold=threshold))
+        dU2array = np.array(dU2array)
+        self.threshold = listthreshold[np.where(dU2array==dU2array.max())[0][0]]
+        self.dU2max = dU2array.max()
+        
+        
+
+
+
     def searchM(self,X,seed=12,**kwargs):
         if self.M is None:
             M = kwargs.get("M", None)
@@ -298,10 +322,11 @@ class Model:
         else:
             self.M = M
         inertia = 0
+        sil = []
         if method=="K-means":
             if isinstance(M, int):
-                model_init = skc.MiniBatchKMeans(n_clusters=M,init=init,max_iter=max_iter).fit(X)
-                sil = silhouette_score(X, model_init.labels_, metric = 'euclidean')
+                model_init = skc.MiniBatchKMeans(n_clusters=M,init=init,max_iter=max_iter,n_init='auto').fit(X)
+#                 sil = silhouette_score(X, model_init.labels_, metric = 'euclidean')
                 inertia = model_init.inertia_
                 p_ij = OneHotEncoder(handle_unknown='ignore').fit_transform(model_init.labels_[np.newaxis].T).toarray()
                 model = self.params_init(X,p_ij)
@@ -311,7 +336,7 @@ class Model:
                 
             else:
                 model_list = []
-                sil = []
+                
                 list_BIC = []
                 f = IntProgress(min=0, max=len(listM),description="M="+str(listM[0])+"/"+str(listM[-1]))
                 if verbose>0:
@@ -322,16 +347,16 @@ class Model:
                     f.description = "M="+str(m)+"/"+str(listM[-1])
                     self.M=m
                     nuM = self.M+self.M*self.K
-                    mod = skc.MiniBatchKMeans(n_clusters=m,init=init,max_iter=max_iter).fit(X)
+                    mod = skc.MiniBatchKMeans(n_clusters=m,init=init,max_iter=max_iter,n_init='auto').fit(X)
                     model_list.append(mod)
                     p_ij = OneHotEncoder(handle_unknown='ignore').fit_transform(mod.labels_[np.newaxis].T).toarray()
                     model = self.params_init(X,p_ij)
                     BIC_m = self.BIC(X,model["theta_i"],nuM=nuM)
                     list_BIC.append(BIC_m)
-                    sil.append(silhouette_score(X, mod.labels_, metric = 'euclidean'))
+#                     sil.append(silhouette_score(X, mod.labels_, metric = 'euclidean'))
                 list_BIC=np.array(list_BIC)
                 inertia = np.array([i.inertia_ for i in model_list])
-                sil = np.array(sil)
+#                 sil = np.array(sil)
 #                 i=np.where(max(sil)==sil)[0][0]
                 i=np.where(min(list_BIC)==list_BIC)[0][0]
                 while len(set(model_list[i].labels_)) != listM[i]:
@@ -375,19 +400,13 @@ class Model:
 
         
     def fit(self,X,tol=1e-6,maxiter=10,**kwargs):
-        if self.filtered:
-            if sum(X[0,:])==self.E:
-                u2 = ((X/self.E)*(1-X/self.E)).sum(axis=1)
-            else:
-                u2 = ((X)*(1-X)).sum(axis=1)
-            
-            X = X[u2>self.threshold,:]
-            self.u2 = u2
+        
         
         self.K = X.shape[1]
         solver = kwargs.get("solver","Max")
         if self.model_init is None:
             self.initMMM(X,**kwargs)
+
         theta_i = self.model_init["theta_i"]
         
         if self.verbose>0:
@@ -437,50 +456,28 @@ class Model:
             theta_i1 = self.model["theta_i"].copy()
             if self.verbose>0:
                 print("Iter: %s, loglike= %s" %(iter_,self.loglikelihood(X,theta_i1)))
+
         
         
     
-    def predict(self,X):
-        if self.filtered:
+    def predict(self,X,supracluster=True):
+        if supracluster:
+            temp = self.E_step(X,self.model["theta_i"])
             if sum(X[0,:])==self.E:
                 u2 = ((X/self.E)*(1-X/self.E)).sum(axis=1)
             else:
                 u2 = ((X)*(1-X)).sum(axis=1)
-            
-            X = X[u2>self.threshold,:]
-            if X.shape[0]>0:
-                res = self.E_step(X,self.model["theta_i"])
-                temp = {"clusters":np.ones(len(u2)).astype(int)*(-1)}
-                temp["clusters"][u2>self.threshold] = res["clusters"]
-            else:
-                temp = {"clusters":np.ones(len(u2)).astype(int)*(-1)}
-            return temp["clusters"]
+
+            supracluster = self.threshold<u2
+            return np.array([supracluster,temp])
         else:
             temp = self.E_step(X,self.model["theta_i"])
             return temp["clusters"]
 
     def predict_proba(self,X):
-        if self.filtered:
-            if sum(X[0,:])==self.E:
-                u2 = ((X/self.E)*(1-X/self.E)).sum(axis=1)
-            else:
-                u2 = ((X)*(1-X)).sum(axis=1)
-            
-            X = X[u2>self.threshold,:]
-            res_pij = np.zeros((len(u2),self.M+1))
-            if X.shape[0]>0:
-                res = self.E_step(X,self.model["theta_i"])
-                res_pij[u2>self.threshold,:self.M] = res["p_ij"]
-                res_pij[u2<=self.threshold,self.M] = 1
-            else:
-                res_pij[:,self.M] = 1
-            temp = {"p_ij":res_pij}
-            return temp["p_ij"]
-            
-        else:
-            temp = self.E_step(X,self.model["theta_i"])
-            return temp["p_ij"]
-        
+        temp = self.E_step(X,self.model["theta_i"])
+        return temp["p_ij"]
+    
     
     def E_step(self,X,theta_i):
         M = len(theta_i["pi"])
@@ -531,6 +528,61 @@ class Model:
         else:
             BIC_m = -2*(self.loglikelihood(X,theta_i,**kwargs))+nuM*np.log(X.shape[0])
             return BIC_m
+
+    def dU2(self,u2,clusters,threshold=0):
+        Sclusters =clusters 	
+        Sk = np.array(list(range(len(self.model["theta_i"]["pi"]))))
+        u2p = []
+        for p in self.model["theta_i"]["theta_i_m"]:
+            u2p.append((1-sum(p**2)))
+        u2p = np.array(u2p)
+
+        ub = u2p[u2p<threshold]
+        sb = Sk[u2p<threshold]
+        up = u2p[u2p>=threshold]
+        sp = Sk[u2p>=threshold]
+
+        Su = Sclusters.copy()
+        if len(sb)>0:
+            for s in sb:
+                Su[Sclusters==s] = 0
+            ubm = u2[Su==0].mean()
+            ubv = u2[Su==0].var()
+            ubmm = ub.mean()
+            
+        if len(sp)>0:
+            for s in sp:
+                Su[Sclusters==s] = 1
+            upm = u2[Su==1].mean()
+            upv = u2[Su==1].var()
+            upmm = up.mean()
+            
+        if len(sb)==0:
+            ubm = upm
+            ubv = 0
+            upmm = up.mean()
+            ubmm = upmm
+
+        if len(sp)==0:
+            upm = ubm
+            upv = 0
+            ubmm = ub.mean()
+            upmm = ubmm
+            
+        Nb = sum(Su==0)
+        Np = sum(Su==1)
+    #                 print(M,threshold,upv,ubv,((Np-1)*upv+(Nb-1)*ubv))
+        
+        if np.isnan(upv):
+            upv=0
+        if np.isnan(ubv):
+            ubv=0
+        
+        if (upv==0)&(ubv==0):
+            dU2 = 0
+        else:
+            dU2 = abs(ubm-upm)/np.sqrt(((Np-1)*upv+(Nb-1)*ubv))
+        return dU2
 
 
 class MixtMultinomial(Model):
@@ -663,7 +715,24 @@ class MixtModel(Model):
             self.distribution = MixtDirichlet(**kwargs)
             
     def fit(self,X,**kwargs):
-        self.distribution.fit(X,**kwargs)
+        self.M = kwargs.get("M", None)
+        if self.M is None:
+            Mmax = int(X.shape[0]**0.3)
+            if self.distributionName == "Multinomial":
+                listdist = [MixtMultinomial(**kwargs) for i in range(Mmax-1)]
+            else:
+                listdist = [MixtDirichlet(**kwargs) for i in range(Mmax-1)]
+            listBIC = []
+            
+            for m in range(1,Mmax):
+                listdist[m-1].fit(X,M=m,**kwargs)
+                nuM = len(listdist[m-1].model["theta_i"]["pi"])+len(listdist[m-1].model["theta_i"]["pi"])*X.shape[1]
+                listBIC.append(listdist[m-1].BIC(X,listdist[m-1].model["theta_i"],nuM=nuM))
+            listBIC = np.array(listBIC)
+
+            self.distribution = listdist[np.where(listBIC==min(listBIC))[0][0]]
+        else:
+            self.distribution.fit(X,**kwargs)
         self.model = self.distribution.model
         self.model_init = self.distribution.model_init
         
@@ -688,6 +757,7 @@ class MixtModel(Model):
         
         self.model["theta_i"]["pi"] = self.model["theta_i"]["pi"][reorder]
         self.model["theta_i"]["theta_i_m"] = self.model["theta_i"]["theta_i_m"][reorder,:]
+        self.model["theta_i"]["theta_i_m"] = self.model["theta_i"]["theta_i_m"]/(self.model["theta_i"]["theta_i_m"]).sum(axis=1,keepdims=True)
         self.model["clusters"] = np.array([reorder[m] for m in self.model["clusters"]])
         self.model["p_ij"] = self.model["p_ij"][:,reorder]
         
@@ -695,6 +765,14 @@ class MixtModel(Model):
         self.model_init["theta_i"]["theta_i_m"] = self.model_init["theta_i"]["theta_i_m"][reorder,:]
         self.model_init["clusters"] = np.array([reorder[m] for m in self.model_init["clusters"]])
         self.model_init["p_ij"] = self.model_init["p_ij"][:,reorder]
+
+        self.distribution.model = self.model
+        self.distribution.model_init = self.model_init
+
+        
+        if self.threshold is None:
+            end = kwargs.get("end", 0.01)
+            self.distribution.searchTreshold(X,end=end)
             
 
         

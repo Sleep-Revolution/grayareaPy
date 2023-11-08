@@ -1,0 +1,11 @@
+*.ipynb_checkpoints
+*/__pycache__/
+*.vscode
+*/results
+*/results/*
+ResultPlot.ipynb
+Untitled.ipynb
+*/save_data/*
+*/save_data
+BIC.ipynb
+test.py

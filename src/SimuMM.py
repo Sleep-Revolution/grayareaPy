@@ -5,7 +5,7 @@ import os
 
 
 class RunExp:
-    def __init__(self,list_pi=[""],list_theta_i_m=[""],list_N=[""],list_E=[""],list_Distr=[""],list_threshold=[""],list_alpha=[""]):
+    def __init__(self,list_pi=[""],list_theta_i_m=[""],list_N=[""],list_E=[""],list_Distr=[""],list_alpha=[""]):
         
         dict_exp = []
         
@@ -15,18 +15,16 @@ class RunExp:
                     for dist in list_Distr:
                         for theta in list_theta_i_m:
                             for alpha in list_alpha:
-                                for threshold in list_threshold:
-                                    temp = {"Results":[]}
-                                    
-                                    temp["pi"] = p
-                                    temp["theta_i_m"] = theta
-                                    temp["N"] = n
-                                    temp["E"] = e
-                                    temp["Distribution"] = dist
-                                    temp["Alpha"] = alpha
-                                    temp["threshold"] = threshold
-                                    
-                                    dict_exp.append(temp)
+                                temp = {"Results":[]}
+                                
+                                temp["pi"] = p
+                                temp["theta_i_m"] = theta
+                                temp["N"] = n
+                                temp["E"] = e
+                                temp["Distribution"] = dist
+                                temp["Alpha"] = alpha
+                                
+                                dict_exp.append(temp)
         self.dict_exp = dict_exp
 
     def Run(self,nRep = 30):
@@ -55,21 +53,21 @@ class RunExp:
                                             Z=Z,
                                             seed=seed_array[n],
                                             distribution=self.dict_exp[exp]["Distribution"])
-                MM = MixtModel(E=self.dict_exp[exp]["E"],distribution=self.dict_exp[exp]["Distribution"],
-                               threshold=self.dict_exp[exp]["threshold"],
-                               censored=True)
+                MM = MixtModel(E=self.dict_exp[exp]["E"],distribution=self.dict_exp[exp]["Distribution"])
                 
                 MM.fit(X_,method="K-means",init="k-means++")
                 results["M"] = len(MM.model["theta_i"]["pi"])
+                
                 results["model_init"] = MM.model_init
                 results["criteria"] = MM.distribution.criteria
 
-                MM = MixtModel(E=self.dict_exp[exp]["E"],distribution=self.dict_exp[exp]["Distribution"],
-                               threshold=self.dict_exp[exp]["threshold"],
-                               censored=True)
-                MM.fit(X_,method="K-means",M=len(self.dict_exp[exp]["pi"])-1,init="k-means++")
+                MM = MixtModel(E=self.dict_exp[exp]["E"],distribution=self.dict_exp[exp]["Distribution"])
+                MM.fit(X_,method="K-means",init="k-means++",M=len(self.dict_exp[exp]["pi"]))
                 self.MM = MM
                 results["model"] = MM.model
+                results["threshold"] = MM.distribution.threshold
+                results["dU2"] = MM.distribution.dU2max
+                results["dU2"] = MM.distribution.dU2max
                 
                 CM,RMSE = self.Evaluation(X_,
                                           MM.model,
@@ -111,12 +109,8 @@ class RunExp:
 
     
     def Evaluation(self,X,model,trueZ,distribution,pi,theta_i_m,alpha=None):
-        clusters = self.MM.distribution.predict(X)
+        clusters = self.MM.distribution.predict(X,supracluster=False)
         CM = confusion_matrix(trueZ,clusters)
-        if self.MM.distribution.censored:
-            pi = pi[1:]
-            pi = pi/(sum(pi))
-            theta_i_m = theta_i_m[1:,:]
         
         if (distribution == "Dirichlet") & (not (alpha is None)):
             RMSE = sum(((alpha-model["theta_i"]["theta_i_m"])**2).sum(axis=1))/(alpha.shape[0]*alpha.shape[1])
