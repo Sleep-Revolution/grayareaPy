@@ -3,7 +3,6 @@
 *.vscode
 */results
 */results/*
-ResultPlot.ipynb
 Untitled.ipynb
 */save_data/*
 */save_data
