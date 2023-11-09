@@ -42,7 +42,7 @@ class GenMixtSampleFromCatEns:
 
     Methods
     -------
-    generate(N,distribution="Categorial",**kwargs): Function to call random variable generators  (categorical, multinomial or dirichlet).
+    generate(N,distribution="Categorial",**kwargs): Function to generate sample for categorical, multinomial or dirichlet distributions.
         N : int
             Sample size
         distribution : str
@@ -50,7 +50,7 @@ class GenMixtSampleFromCatEns:
         **kwargs: [object]
             Array of function attributes needed for each distribution.
             
-    Categorial(N,pi=None,Z=None,seed=12): Function to generate an ensemble of sample from categorical distribution.
+    Categorial(N,pi=None,Z=None,seed=12)
         N : int
             Sample size
         pi : [float]*M
@@ -60,7 +60,7 @@ class GenMixtSampleFromCatEns:
         seed : int
             Random generator seed
             
-    Multinomial(self,N,Z=None,pi=None,seed=12): Function to generate sample of multinomial distribution from categorical ensemble.
+    Multinomial(self,N,Z=None,pi=None,seed=12)
         N : int
             Sample size
         pi : [float]*M
@@ -70,7 +70,7 @@ class GenMixtSampleFromCatEns:
         seed : int
             Random generator seed
             
-    Dirichlet(N,alpha=None,Z=None,pi=None,seed=12): Function to generate sample of dirichlet distribution from categorical ensemble or from alpha parameter.
+    Dirichlet(N,alpha=None,Z=None,pi=None,seed=12)
         N : int
             Sample size
         alpha: [[float]*K]*M
@@ -95,8 +95,6 @@ class GenMixtSampleFromCatEns:
            
     def generate(self,N,distribution="Categorial",**kwargs):
         """
-        Function to call random variable generator (categorical, multinomial or dirichlet).
-        
         @param N:int, Sample size
         @param distribution: str, Name of the distribution to generate
         @param **kwargs:[object], Array of function attributes needed for each distribution.
@@ -110,7 +108,6 @@ class GenMixtSampleFromCatEns:
     
     def Categorial(self,N,pi=None,Z=None,seed=12):
         """
-        Function to generate an ensemble of sample from categorical distribution.
         @param N : int, Sample size
         @param pi : [float]*M,  Mixture probabilities vector of size M
         @param Z : [int]*N, Mixture labels array
@@ -143,7 +140,6 @@ class GenMixtSampleFromCatEns:
     
     def Multinomial(self,N,Z=None,pi=None,seed=12):
         """
-        Function to generate sample of multinomial distribution from categorical ensemble.
         @param N : int, Sample size
         @param pi : [float]*M,  Mixture probabilities vector of size M
         @param Z : [int]*N, Mixture labels array
@@ -174,7 +170,6 @@ class GenMixtSampleFromCatEns:
     
     def Dirichlet(self,N,alpha=None,Z=None,pi=None,seed=12):
         """
-        Function to generate sample of dirichlet distribution from categorical ensemble or from alpha parameter.
         @param N : int, Sample size
         @param alpha: [[float]*K]*M, Dirichlet parameter vector of size K for each of the M mixture.
         @param pi : [float]*M,  Mixture probabilities vector of size M
@@ -213,62 +208,27 @@ class GenMixtSampleFromCatEns:
     
 class Model:
     """
-    Main class to build every methods needed to create mixture model from Expectation-Maximisation algorithm with automatic estimation of the number of mixture M.
+    Class to generate sample of Multinomial/Dirichlet from an ensemble of categorical law
     ...
 
     Attributes
     ----------
-<<<<<<< Updated upstream
     verbose:
     M:
     E:
     theta_i1:
     model_init:
     threshold:
-=======
-    verbose: str
-        
-    M : int
-        Number of mixture
-        
-    E : int
-        Number of categorical ensemble members
-        
-    theta_i1 : {object}
-        dictionnary of mixture parameters from the previous state of the EM algorithm
-        
-    model_init : {object}
-        dictionnary of initial mixture parameters, if initialize before, must contain theta_i object
-    
-    filtered: bool
-        Boolean calling filtering procedure
-    
-    threshold: float
-        Dterministic threshold used to removed values below.
-    
->>>>>>> Stashed changes
 
     Methods
     -------
     KMeans(self,X,M,seed=12,**kwargs):
-        
-    
     smallEM(self,X,M, maxEM=50,init="k-means++"):
     searchM(self,X,seed=12,**kwargs):
     initMMM(self,X,**kwargs):
     fit(self,X,tol=1e-6,maxiter=10,**kwargs):
     predict(self,X):
     predict_proba(self,X):
-    E_step(self,X,theta_i):
-    M_step(self,X,p_ij):
-    params_init(self,X,p_ij):
-    XZdensity(self,X,theta_i,**kwargs):
-    criteria(self,X,theta_i,theta_i1,criteria="loglike"):
-    
-    loglikelihood(self,X,theta_i,**kwargs):
-    
-    BIC(self,X,theta_i,nuM,**kwargs):
-    
     """
         
     def __init__(self,**kwargs):
@@ -278,6 +238,7 @@ class Model:
         self.theta_i1=None
         self.model_init = kwargs.get("model_init", None)
         self.threshold = kwargs.get("threshold", None)
+        self.SClist = None
         
     def KMeans(self,X,M,seed=12,**kwargs):
         init = kwargs.get("init", "k-means++")
@@ -502,14 +463,14 @@ class Model:
     
     def predict(self,X,supracluster=True):
         if supracluster:
+            self.SClist
             temp = self.E_step(X,self.model["theta_i"])
-            if sum(X[0,:])==self.E:
-                u2 = ((X/self.E)*(1-X/self.E)).sum(axis=1)
-            else:
-                u2 = ((X)*(1-X)).sum(axis=1)
 
-            supracluster = self.threshold<u2
-            return np.array([supracluster,temp])
+
+            supracluster = []
+            for c in temp["clusters"]:
+                supracluster.append(c in self.SClist[0])
+            return np.array([supracluster,temp["clusters"]]).T
         else:
             temp = self.E_step(X,self.model["theta_i"])
             return temp["clusters"]
@@ -809,10 +770,16 @@ class MixtModel(Model):
         self.distribution.model = self.model
         self.distribution.model_init = self.model_init
 
-        
         if self.threshold is None:
             end = kwargs.get("end", 0.01)
             self.distribution.searchTreshold(X,end=end)
+
+        u2p = []
+        for p in self.model["theta_i"]["theta_i_m"]:
+            u2p.append((1-sum(p**2)))
+        u2p = np.array(u2p)
+        self.SClist = [np.where(u2p<self.distribution.threshold)[0],np.where(u2p>=self.distribution.threshold)[0]]
+        self.distribution.SClist = [np.where(u2p<self.distribution.threshold)[0],np.where(u2p>=self.distribution.threshold)[0]]
             
 
         
